@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern To-Do List - Noto Sans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Import Google Noto Sans */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+        
+        :root {
+            /* Dark Theme Defaults */
+            --bg-body: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: rgba(30, 41, 59, 0.9);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --border-color: #334155;
+            --input-bg: rgba(15, 23, 42, 0.5);
+            --item-hover: rgba(255, 255, 255, 0.03);
+            --accent-blue: #3b82f6;
+            --accent-blue-hover: #60a5fa;
+            --footer-bg: rgba(15, 23, 42, 0.4);
+        }
+
+        [data-theme="light"] {
+            --bg-body: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --input-bg: #f1f5f9;
+            --item-hover: rgba(0, 0, 0, 0.02);
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --footer-bg: rgba(241, 245, 249, 0.6);
+        }
+
+        body {
+            font-family: 'Noto Sans', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            transition: background 0.4s ease, color 0.4s ease;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            transition: background 0.4s ease, border 0.4s ease;
+        }
+
+        .todo-item {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .todo-item:last-child {
+            border-bottom: none;
+        }
+
+        .todo-item:hover {
+            background-color: var(--item-hover);
+        }
+
+        .completed-text {
+            text-decoration: line-through;
+            opacity: 0.4;
+        }
+
+        .custom-checkbox {
+            width: 26px;
+            height: 26px;
+            border: 2px solid var(--accent-blue);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .custom-checkbox.checked {
+            background-color: var(--accent-blue);
+        }
+
+        .custom-checkbox svg {
+            display: none;
+            color: white;
+            width: 16px;
+            height: 16px;
+        }
+
+        .custom-checkbox.checked svg {
+            display: block;
+        }
+
+        .tag-pill {
+            font-size: 0.7rem;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .theme-toggle {
+            cursor: pointer;
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            color: var(--text-main);
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(15deg) scale(1.1);
+        }
+
+        .delete-hint {
+            font-size: 10px;
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            color: #ef4444;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+        .tag-selector:hover .delete-hint {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex justify-center items-start">
+
+    <div class="glass-card w-full max-w-2xl overflow-hidden">
+        <!-- Header Section -->
+        <div class="p-8 border-b border-slate-700/50">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h1 class="text-3xl font-extrabold tracking-tight">Daily Tasks</h1>
+                    <p class="text-base opacity-70 mt-2" id="stats-text">Keep track of your productivity</p>
+                </div>
+                <button id="theme-btn" class="theme-toggle">
+                    <!-- Icon replaced by JS -->
+                    <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+                </button>
+            </div>
+            
+            <div class="mt-8">
+                <div class="flex gap-3">
+                    <input type="text" id="todo-input" 
+                        class="flex-1 px-5 py-4 text-lg rounded-2xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm font-normal"
+                        placeholder="What needs to be done?"
+                        maxlength="100">
+                    <button id="add-btn" 
+                        class="bg-[var(--accent-blue)] hover:opacity-90 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 shadow-lg">
+                        Add Task
+                    </button>
+                </div>
+                
+                <div class="flex items-center gap-3 mt-5">
+                    <div id="tag-container" class="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
+                        <!-- Tags rendered by JS -->
+                    </div>
+                    <button id="add-tag-btn" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--input-bg)] text-[var(--text-sub)] hover:bg-[var(--accent-blue)] hover:text-white transition-all mb-6" title="Add Custom Category">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- List Section -->
+        <div id="todo-list" class="max-h-[600px] overflow-y-auto min-h-[300px]">
+            <div id="empty-state" class="p-24 text-center opacity-40">
+                <svg class="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                <p class="text-xl font-semibold">No tasks found here.</p>
+                <p class="text-sm mt-1">Add a task or create a new category.</p>
+            </div>
+        </div>
+
+        <!-- Footer Progress -->
+        <div class="p-6 bg-[var(--footer-bg)] text-sm flex justify-between items-center px-8 border-t border-[var(--border-color)]">
+            <div class="flex items-center gap-4 flex-1 max-w-xs">
+                <div class="w-full h-2.5 bg-slate-400/20 rounded-full overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-700" style="width: 0%"></div>
+                </div>
+                <span id="progress-percent" class="font-bold opacity-60 min-w-[45px]">0%</span>
+            </div>
+            <button id="clear-completed" class="opacity-60 hover:text-red-500 font-bold transition-colors ml-4">Clear Completed</button>
+        </div>
+    </div>
+
+    <!-- Custom Category Modal -->
+    <div id="tag-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] p-8 rounded-3xl w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-bold mb-4 tracking-tight">New Category</h2>
+            <input type="text" id="new-tag-input" 
+                class="w-full px-4 py-3 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] mb-6 outline-none font-medium"
+                placeholder="Category name..."
+                maxlength="15">
+            <div class="flex gap-3 justify-end">
+                <button id="modal-cancel" class="px-5 py-2 opacity-60 font-semibold hover:opacity-100 transition-colors">Cancel</button>
+                <button id="modal-confirm" class="px-6 py-2 bg-[var(--accent-blue)] text-white rounded-xl font-bold shadow-lg">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('todo-input');
+        const addBtn = document.getElementById('add-btn');
+        const todoList = document.getElementById('todo-list');
+        const statsText = document.getElementById('stats-text');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+        const emptyState = document.getElementById('empty-state');
+        const clearCompletedBtn = document.getElementById('clear-completed');
+        const tagContainer = document.getElementById('tag-container');
+        const themeBtn = document.getElementById('theme-btn');
+        const themeIcon = document.getElementById('theme-icon');
+
+        // State Management
+        let todos = JSON.parse(localStorage.getItem('my-todo-list-v2')) || [];
+        let customTags = JSON.parse(localStorage.getItem('my-todo-tags-v2')) || [];
+        let activeTag = 'All';
+        let currentTheme = localStorage.getItem('my-todo-theme') || 'dark';
+
+        // Icons
+        const SUN_ICON = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        const MOON_ICON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+
+        const colorRotation = [
+            'bg-blue-500/10 text-blue-500 border border-blue-500/30',
+            'bg-purple-500/10 text-purple-500 border border-purple-500/30',
+            'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30',
+            'bg-rose-500/10 text-rose-500 border border-rose-500/30',
+            'bg-orange-500/10 text-orange-500 border border-orange-500/30'
+        ];
+
+        function saveToStorage() {
+            localStorage.setItem('my-todo-list-v2', JSON.stringify(todos));
+            localStorage.setItem('my-todo-tags-v2', JSON.stringify(customTags));
+            localStorage.setItem('my-todo-theme', currentTheme);
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            applyTheme();
+            saveToStorage();
+        }
+
+        function applyTheme() {
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            themeIcon.innerHTML = currentTheme === 'dark' ? SUN_ICON : MOON_ICON;
+        }
+
+        function getTagStyle(tagName) {
+            const custom = customTags.find(t => t.name === tagName);
+            return custom ? custom.style : 'bg-blue-500/10 text-blue-500 border border-blue-500/30';
+        }
+
+        function removeCategory(tagName) {
+            if (tagName === 'All') return;
+            if (confirm(`Remove category "${tagName}"? Tasks will be moved to "General".`)) {
+                todos = todos.map(todo => (todo.tag === tagName ? { ...todo, tag: 'General' } : todo));
+                customTags = customTags.filter(t => t.name !== tagName);
+                if (activeTag === tagName) activeTag = 'All';
+                saveToStorage();
+                renderTags();
+                render();
+            }
+        }
+
+        function renderTags() {
+            let html = `<button class="tag-selector px-5 py-2 text-sm rounded-full border transition-all font-bold whitespace-nowrap ${activeTag === 'All' ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" data-tag="All">All</button>`;
+
+            customTags.forEach(tag => {
+                const isActive = activeTag === tag.name;
+                html += `
+                    <button class="tag-selector relative px-5 py-2 text-sm rounded-full border transition-all font-bold whitespace-nowrap ${isActive ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" 
+                        data-tag="${tag.name}" 
+                        oncontextmenu="event.preventDefault(); window.removeCategory('${tag.name}')">
+                        ${tag.name}
+                        <span class="delete-hint">Right-click to delete</span>
+                    </button>
+                `;
+            });
+
+            tagContainer.innerHTML = html;
+            document.querySelectorAll('.tag-selector').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeTag = btn.dataset.tag;
+                    renderTags();
+                    render();
+                });
+            });
+        }
+
+        window.removeCategory = removeCategory;
+
+        function render() {
+            const currentItems = todoList.querySelectorAll('.todo-item');
+            currentItems.forEach(item => item.remove());
+
+            const filteredTodos = activeTag === 'All' ? todos : todos.filter(t => t.tag === activeTag);
+
+            if (filteredTodos.length === 0) {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+                filteredTodos.forEach((todo) => {
+                    const originalIndex = todos.findIndex(t => t === todo);
+                    const div = document.createElement('div');
+                    div.className = 'todo-item p-6 flex items-center justify-between group';
+                    div.innerHTML = `
+                        <div class="flex items-center gap-5 flex-1 cursor-pointer" onclick="toggleTodo(${originalIndex})">
+                            <div class="custom-checkbox ${todo.completed ? 'checked' : ''}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-lg font-semibold ${todo.completed ? 'completed-text' : ''}">${todo.text}</span>
+                                <span class="tag-pill w-fit mt-2 ${getTagStyle(todo.tag)}">${todo.tag || 'General'}</span>
+                            </div>
+                        </div>
+                        <button onclick="deleteTodo(${originalIndex})" class="opacity-0 group-hover:opacity-100 text-rose-500 transition-all p-3">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                        </button>
+                    `;
+                    todoList.appendChild(div);
+                });
+            }
+
+            updateStats();
+            saveToStorage();
+        }
+
+        function updateStats() {
+            const completedCount = todos.filter(t => t.completed).length;
+            const total = todos.length;
+            const percentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+            statsText.innerText = total === 0 ? "Your space is clear" : `${completedCount} of ${total} tasks finished`;
+            progressBar.style.width = `${percentage}%`;
+            progressPercent.innerText = `${percentage}%`;
+        }
+
+        function addTodo() {
+            const text = input.value.trim();
+            if (text) {
+                let taskTag = activeTag === 'All' ? (customTags.length > 0 ? customTags[0].name : 'General') : activeTag;
+                todos.push({ text, completed: false, tag: taskTag });
+                input.value = '';
+                render();
+            }
+        }
+
+        window.toggleTodo = (i) => { todos[i].completed = !todos[i].completed; render(); };
+        window.deleteTodo = (i) => { todos.splice(i, 1); render(); };
+
+        addBtn.addEventListener('click', addTodo);
+        input.addEventListener('keypress', (e) => e.key === 'Enter' && addTodo());
+        themeBtn.addEventListener('click', toggleTheme);
+        clearCompletedBtn.addEventListener('click', () => { todos = todos.filter(t => !t.completed); render(); });
+
+        // Category Modal Logic
+        const tagModal = document.getElementById('tag-modal');
+        const newTagInput = document.getElementById('new-tag-input');
+        const modalConfirm = document.getElementById('modal-confirm');
+        const modalCancel = document.getElementById('modal-cancel');
+
+        document.getElementById('add-tag-btn').addEventListener('click', () => {
+            tagModal.classList.remove('hidden');
+            tagModal.classList.add('flex');
+            newTagInput.focus();
+        });
+
+        modalCancel.addEventListener('click', () => {
+            tagModal.classList.add('hidden');
+            tagModal.classList.remove('flex');
+            newTagInput.value = '';
+        });
+
+        modalConfirm.addEventListener('click', () => {
+            const name = newTagInput.value.trim();
+            if (name && name.toLowerCase() !== 'all' && !customTags.find(t => t.name.toLowerCase() === name.toLowerCase())) {
+                customTags.push({ name, style: colorRotation[customTags.length % colorRotation.length] });
+                activeTag = name;
+                renderTags();
+                render();
+                saveToStorage();
+            }
+            modalCancel.click();
+        });
+
+        // Initial setup
+        applyTheme();
+        renderTags();
+        render();
+    </script>
+</body>
+</html>
