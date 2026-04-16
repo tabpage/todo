@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>Modern To-Do List</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -132,6 +132,7 @@
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
             color: var(--text-main);
+            position: relative;
         }
 
         .icon-btn:hover {
@@ -155,49 +156,133 @@
         .tag-selector:hover .delete-hint {
             opacity: 1;
         }
+
+        /* Dropdown menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            min-width: 160px;
+            z-index: 30;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.2s ease;
+        }
+        .dropdown-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .dropdown-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+        .dropdown-item:hover {
+            background: var(--item-hover);
+        }
+        .dropdown-item.danger {
+            color: #ef4444;
+        }
+
+        /* Export modal */
+        .modal-overlay {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+        }
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 360px;
+            width: 90%;
+        }
+
+        /* Responsive touch improvements */
+        @media (max-width: 640px) {
+            .glass-card {
+                border-radius: 24px;
+            }
+            .icon-btn {
+                width: 40px;
+                height: 40px;
+                border-radius: 12px;
+            }
+            .custom-checkbox {
+                width: 24px;
+                height: 24px;
+                border-radius: 7px;
+            }
+        }
     </style>
 </head>
-<body class="p-6 md:p-12 flex justify-center items-start">
+<body class="p-3 sm:p-4 md:p-8 lg:p-12 flex justify-center items-start">
 
     <div class="glass-card w-full max-w-2xl overflow-hidden">
         <!-- Header Section -->
-        <div class="p-8 border-b border-slate-700/50">
-            <div class="flex justify-between items-start">
+        <div class="p-4 sm:p-5 md:p-6 lg:p-8 border-b border-slate-700/50">
+            <div class="flex justify-between items-start gap-2">
                 <div>
-                    <h1 class="text-3xl font-extrabold tracking-tight">Daily Tasks</h1>
-                    <p class="text-base opacity-70 mt-2" id="stats-text">Keep track of your productivity</p>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Daily Tasks</h1>
+                    <p class="text-sm sm:text-base opacity-70 mt-1 sm:mt-2" id="stats-text">Keep track of your productivity</p>
                 </div>
-                <div class="flex gap-2">
-                    <button id="import-btn" class="icon-btn" title="Import JSON">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <div class="flex gap-1 sm:gap-2 relative">
+                    <!-- Three-dot menu button (replaces import/export) -->
+                    <button id="menu-btn" class="icon-btn" title="Menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
                     </button>
-                    <button id="export-btn" class="icon-btn" title="Export JSON">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </button>
+                    <!-- Dropdown menu -->
+                    <div id="dropdown-menu" class="dropdown-menu">
+                        <div id="import-option" class="dropdown-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Import JSON
+                        </div>
+                        <div id="export-option" class="dropdown-item">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export JSON...
+                        </div>
+                    </div>
                     <button id="theme-btn" class="icon-btn">
-                        <!-- Icon replaced by JS -->
                         <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
                     </button>
                 </div>
             </div>
             
-            <div class="mt-8">
-                <div class="flex gap-3">
+            <div class="mt-5 sm:mt-6 md:mt-8">
+                <div class="flex flex-col sm:flex-row gap-3">
                     <input type="text" id="todo-input" 
-                        class="flex-1 px-5 py-4 text-lg rounded-2xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm font-normal"
+                        class="flex-1 px-4 py-3 sm:px-5 sm:py-4 text-base sm:text-lg rounded-xl sm:rounded-2xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm font-normal"
                         placeholder="What needs to be done?"
                         maxlength="100">
                     <button id="add-btn" 
-                        class="bg-[var(--accent-blue)] hover:opacity-90 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all transform active:scale-95 shadow-lg">
+                        class="bg-[var(--accent-blue)] hover:opacity-90 text-white px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg transition-all transform active:scale-95 shadow-lg whitespace-nowrap">
                         Add Task
                     </button>
                 </div>
                 
-                <div class="flex items-center gap-3 mt-5">
-                    <div id="tag-container" class="flex gap-3 overflow-x-auto pb-6 scrollbar-hide">
+                <div class="flex items-center gap-2 sm:gap-3 mt-4 sm:mt-5">
+                    <div id="tag-container" class="flex gap-2 sm:gap-3 overflow-x-auto pb-4 sm:pb-6 scrollbar-hide">
                         <!-- Tags rendered by JS -->
                     </div>
-                    <button id="add-tag-btn" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--input-bg)] text-[var(--text-sub)] hover:bg-[var(--accent-blue)] hover:text-white transition-all mb-6" title="Add Custom Category">
+                    <button id="add-tag-btn" class="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-[var(--input-bg)] text-[var(--text-sub)] hover:bg-[var(--accent-blue)] hover:text-white transition-all mb-4 sm:mb-6" title="Add Custom Category">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                     </button>
                 </div>
@@ -205,23 +290,23 @@
         </div>
 
         <!-- List Section -->
-        <div id="todo-list" class="max-h-[600px] overflow-y-auto min-h-[300px]">
-            <div id="empty-state" class="p-24 text-center opacity-40">
-                <svg class="w-20 h-20 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                <p class="text-xl font-semibold">No tasks found here.</p>
-                <p class="text-sm mt-1">Add a task or create a new category.</p>
+        <div id="todo-list" class="max-h-[500px] sm:max-h-[550px] md:max-h-[600px] overflow-y-auto min-h-[250px] sm:min-h-[300px]">
+            <div id="empty-state" class="p-16 sm:p-20 md:p-24 text-center opacity-40">
+                <svg class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 sm:mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                <p class="text-lg sm:text-xl font-semibold">No tasks found here.</p>
+                <p class="text-xs sm:text-sm mt-1">Add a task or create a new category.</p>
             </div>
         </div>
 
         <!-- Footer Progress -->
-        <div class="p-6 bg-[var(--footer-bg)] text-sm flex justify-between items-center px-8 border-t border-[var(--border-color)]">
-            <div class="flex items-center gap-4 flex-1 max-w-xs">
-                <div class="w-full h-2.5 bg-slate-400/20 rounded-full overflow-hidden">
+        <div class="p-4 sm:p-5 md:p-6 bg-[var(--footer-bg)] text-sm flex flex-wrap justify-between items-center gap-3 px-4 sm:px-6 md:px-8 border-t border-[var(--border-color)]">
+            <div class="flex items-center gap-3 sm:gap-4 flex-1 min-w-[180px]">
+                <div class="w-full h-2 sm:h-2.5 bg-slate-400/20 rounded-full overflow-hidden">
                     <div id="progress-bar" class="h-full bg-blue-500 transition-all duration-700" style="width: 0%"></div>
                 </div>
-                <span id="progress-percent" class="font-bold opacity-60 min-w-[45px]">0%</span>
+                <span id="progress-percent" class="font-bold opacity-60 min-w-[45px] text-sm sm:text-base">0%</span>
             </div>
-            <button id="clear-completed" class="opacity-60 hover:text-red-500 font-bold transition-colors ml-4">Clear Completed</button>
+            <button id="clear-completed" class="opacity-60 hover:text-red-500 font-bold transition-colors text-sm sm:text-base whitespace-nowrap">Clear Completed</button>
         </div>
     </div>
 
@@ -230,7 +315,7 @@
 
     <!-- Custom Category Modal -->
     <div id="tag-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] p-8 rounded-3xl w-full max-w-sm shadow-2xl">
+        <div class="bg-[var(--card-bg)] border border-[var(--border-color)] p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-2xl mx-2">
             <h2 class="text-xl font-bold mb-4 tracking-tight">New Category</h2>
             <input type="text" id="new-tag-input" 
                 class="w-full px-4 py-3 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] mb-6 outline-none font-medium"
@@ -243,253 +328,351 @@
         </div>
     </div>
 
+    <!-- Export Filter Modal -->
+    <div id="export-modal" class="fixed inset-0 modal-overlay hidden items-center justify-center p-4 z-50">
+        <div class="modal-card">
+            <h2 class="text-xl font-bold mb-4 tracking-tight">Export Tasks</h2>
+            <p class="text-sm opacity-70 mb-4">Choose which category to export</p>
+            <select id="export-category-select" class="w-full px-4 py-3 rounded-xl bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-main)] mb-6 outline-none font-medium">
+                <option value="__ALL__">All categories</option>
+                <!-- Options populated dynamically -->
+            </select>
+            <div class="flex gap-3 justify-end">
+                <button id="export-cancel" class="px-5 py-2 opacity-60 font-semibold hover:opacity-100 transition-colors">Cancel</button>
+                <button id="export-confirm" class="px-6 py-2 bg-[var(--accent-blue)] text-white rounded-xl font-bold shadow-lg">Export</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        const input = document.getElementById('todo-input');
-        const addBtn = document.getElementById('add-btn');
-        const todoList = document.getElementById('todo-list');
-        const statsText = document.getElementById('stats-text');
-        const progressBar = document.getElementById('progress-bar');
-        const progressPercent = document.getElementById('progress-percent');
-        const emptyState = document.getElementById('empty-state');
-        const clearCompletedBtn = document.getElementById('clear-completed');
-        const tagContainer = document.getElementById('tag-container');
-        const themeBtn = document.getElementById('theme-btn');
-        const themeIcon = document.getElementById('theme-icon');
-        const exportBtn = document.getElementById('export-btn');
-        const importBtn = document.getElementById('import-btn');
-        const fileImportInput = document.getElementById('file-import-input');
+        (function(){
+            const input = document.getElementById('todo-input');
+            const addBtn = document.getElementById('add-btn');
+            const todoList = document.getElementById('todo-list');
+            const statsText = document.getElementById('stats-text');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercent = document.getElementById('progress-percent');
+            const emptyState = document.getElementById('empty-state');
+            const clearCompletedBtn = document.getElementById('clear-completed');
+            const tagContainer = document.getElementById('tag-container');
+            const themeBtn = document.getElementById('theme-btn');
+            const themeIcon = document.getElementById('theme-icon');
+            const fileImportInput = document.getElementById('file-import-input');
+            
+            // Menu elements
+            const menuBtn = document.getElementById('menu-btn');
+            const dropdown = document.getElementById('dropdown-menu');
+            const importOption = document.getElementById('import-option');
+            const exportOption = document.getElementById('export-option');
 
-        // State Management
-        let todos = JSON.parse(localStorage.getItem('my-todo-list-v2')) || [];
-        let customTags = JSON.parse(localStorage.getItem('my-todo-tags-v2')) || [];
-        let activeTag = 'All';
-        let currentTheme = localStorage.getItem('my-todo-theme') || 'dark';
+            // Export modal elements
+            const exportModal = document.getElementById('export-modal');
+            const exportCategorySelect = document.getElementById('export-category-select');
+            const exportCancel = document.getElementById('export-cancel');
+            const exportConfirm = document.getElementById('export-confirm');
 
-        // Icons
-        const SUN_ICON = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
-        const MOON_ICON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+            // State Management
+            let todos = JSON.parse(localStorage.getItem('my-todo-list-v2')) || [];
+            let customTags = JSON.parse(localStorage.getItem('my-todo-tags-v2')) || [];
+            let activeTag = 'All';
+            let currentTheme = localStorage.getItem('my-todo-theme') || 'dark';
 
-        const colorRotation = [
-            'bg-blue-500/10 text-blue-500 border border-blue-500/30',
-            'bg-purple-500/10 text-purple-500 border border-purple-500/30',
-            'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30',
-            'bg-rose-500/10 text-rose-500 border border-rose-500/30',
-            'bg-orange-500/10 text-orange-500 border border-orange-500/30'
-        ];
+            // Icons
+            const SUN_ICON = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+            const MOON_ICON = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
 
-        function saveToStorage() {
-            localStorage.setItem('my-todo-list-v2', JSON.stringify(todos));
-            localStorage.setItem('my-todo-tags-v2', JSON.stringify(customTags));
-            localStorage.setItem('my-todo-theme', currentTheme);
-        }
+            const colorRotation = [
+                'bg-blue-500/10 text-blue-500 border border-blue-500/30',
+                'bg-purple-500/10 text-purple-500 border border-purple-500/30',
+                'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30',
+                'bg-rose-500/10 text-rose-500 border border-rose-500/30',
+                'bg-orange-500/10 text-orange-500 border border-orange-500/30'
+            ];
 
-        function toggleTheme() {
-            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            applyTheme();
-            saveToStorage();
-        }
-
-        function applyTheme() {
-            document.documentElement.setAttribute('data-theme', currentTheme);
-            themeIcon.innerHTML = currentTheme === 'dark' ? SUN_ICON : MOON_ICON;
-        }
-
-        function getTagStyle(tagName) {
-            const custom = customTags.find(t => t.name === tagName);
-            return custom ? custom.style : 'bg-blue-500/10 text-blue-500 border border-blue-500/30';
-        }
-
-        // Export System
-        function exportData() {
-            const data = {
-                todos,
-                customTags,
-                theme: currentTheme,
-                exportedAt: new Date().toISOString()
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `todo-backup-${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        // Import System
-        function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                try {
-                    const imported = JSON.parse(event.target.result);
-                    if (imported.todos && Array.isArray(imported.todos)) {
-                        todos = imported.todos;
-                        customTags = imported.customTags || [];
-                        currentTheme = imported.theme || currentTheme;
-                        
-                        applyTheme();
-                        renderTags();
-                        render();
-                        saveToStorage();
-                        alert('Data imported successfully!');
-                    } else {
-                        throw new Error('Invalid file format');
-                    }
-                } catch (err) {
-                    alert('Error importing data. Please check the file format.');
-                    console.error(err);
-                }
-                fileImportInput.value = ''; // Reset input
-            };
-            reader.readAsText(file);
-        }
-
-        function removeCategory(tagName) {
-            if (tagName === 'All') return;
-            if (confirm(`Remove category "${tagName}"? Tasks will be moved to "General".`)) {
-                todos = todos.map(todo => (todo.tag === tagName ? { ...todo, tag: 'General' } : todo));
-                customTags = customTags.filter(t => t.name !== tagName);
-                if (activeTag === tagName) activeTag = 'All';
-                saveToStorage();
-                renderTags();
-                render();
+            function saveToStorage() {
+                localStorage.setItem('my-todo-list-v2', JSON.stringify(todos));
+                localStorage.setItem('my-todo-tags-v2', JSON.stringify(customTags));
+                localStorage.setItem('my-todo-theme', currentTheme);
             }
-        }
 
-        function renderTags() {
-            let html = `<button class="tag-selector px-5 py-2 text-sm rounded-full border transition-all font-bold whitespace-nowrap ${activeTag === 'All' ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" data-tag="All">All</button>`;
+            function toggleTheme() {
+                currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                applyTheme();
+                saveToStorage();
+            }
 
-            customTags.forEach(tag => {
-                const isActive = activeTag === tag.name;
-                html += `
-                    <button class="tag-selector relative px-5 py-2 text-sm rounded-full border transition-all font-bold whitespace-nowrap ${isActive ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" 
-                        data-tag="${tag.name}" 
-                        oncontextmenu="event.preventDefault(); window.removeCategory('${tag.name}')">
-                        ${tag.name}
-                        <span class="delete-hint">Right-click to delete</span>
-                    </button>
-                `;
-            });
+            function applyTheme() {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+                themeIcon.innerHTML = currentTheme === 'dark' ? SUN_ICON : MOON_ICON;
+            }
 
-            tagContainer.innerHTML = html;
-            document.querySelectorAll('.tag-selector').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    activeTag = btn.dataset.tag;
+            function getTagStyle(tagName) {
+                const custom = customTags.find(t => t.name === tagName);
+                return custom ? custom.style : 'bg-blue-500/10 text-blue-500 border border-blue-500/30';
+            }
+
+            // Export System with category filter
+            function exportData(categoryFilter = null) {
+                let exportTodos = todos;
+                if (categoryFilter && categoryFilter !== '__ALL__') {
+                    exportTodos = todos.filter(t => t.tag === categoryFilter);
+                }
+                const data = {
+                    todos: exportTodos,
+                    customTags,
+                    theme: currentTheme,
+                    exportedAt: new Date().toISOString(),
+                    filter: categoryFilter || 'all'
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const filterText = categoryFilter && categoryFilter !== '__ALL__' ? `-${categoryFilter}` : '';
+                a.download = `todo-backup${filterText}-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            // Import System
+            function importData(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        if (imported.todos && Array.isArray(imported.todos)) {
+                            todos = imported.todos;
+                            customTags = imported.customTags || [];
+                            currentTheme = imported.theme || currentTheme;
+                            
+                            applyTheme();
+                            renderTags();
+                            render();
+                            saveToStorage();
+                            alert('Data imported successfully!');
+                        } else {
+                            throw new Error('Invalid file format');
+                        }
+                    } catch (err) {
+                        alert('Error importing data. Please check the file format.');
+                        console.error(err);
+                    }
+                    fileImportInput.value = ''; // Reset input
+                };
+                reader.readAsText(file);
+            }
+
+            function removeCategory(tagName) {
+                if (tagName === 'All') return;
+                if (confirm(`Remove category "${tagName}"? Tasks will be moved to "General".`)) {
+                    todos = todos.map(todo => (todo.tag === tagName ? { ...todo, tag: 'General' } : todo));
+                    customTags = customTags.filter(t => t.name !== tagName);
+                    if (activeTag === tagName) activeTag = 'All';
+                    saveToStorage();
                     renderTags();
                     render();
-                });
-            });
-        }
+                }
+            }
 
-        window.removeCategory = removeCategory;
+            function renderTags() {
+                let html = `<button class="tag-selector px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-full border transition-all font-bold whitespace-nowrap ${activeTag === 'All' ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" data-tag="All">All</button>`;
 
-        function render() {
-            const currentItems = todoList.querySelectorAll('.todo-item');
-            currentItems.forEach(item => item.remove());
-
-            const filteredTodos = activeTag === 'All' ? todos : todos.filter(t => t.tag === activeTag);
-
-            if (filteredTodos.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                filteredTodos.forEach((todo) => {
-                    const originalIndex = todos.findIndex(t => t === todo);
-                    const div = document.createElement('div');
-                    div.className = 'todo-item p-6 flex items-center justify-between group';
-                    div.innerHTML = `
-                        <div class="flex items-center gap-5 flex-1 cursor-pointer" onclick="toggleTodo(${originalIndex})">
-                            <div class="custom-checkbox ${todo.completed ? 'checked' : ''}">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            </div>
-                            <div class="flex flex-col">
-                                <span class="text-lg font-semibold ${todo.completed ? 'completed-text' : ''}">${todo.text}</span>
-                                <span class="tag-pill w-fit mt-2 ${getTagStyle(todo.tag)}">${todo.tag || 'General'}</span>
-                            </div>
-                        </div>
-                        <button onclick="deleteTodo(${originalIndex})" class="opacity-0 group-hover:opacity-100 text-rose-500 transition-all p-3">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                customTags.forEach(tag => {
+                    const isActive = activeTag === tag.name;
+                    html += `
+                        <button class="tag-selector relative px-4 sm:px-5 py-1.5 sm:py-2 text-xs sm:text-sm rounded-full border transition-all font-bold whitespace-nowrap ${isActive ? 'bg-[var(--accent-blue)] text-white border-blue-500' : 'bg-[var(--input-bg)] opacity-60'}" 
+                            data-tag="${tag.name}" 
+                            oncontextmenu="event.preventDefault(); window.removeCategory('${tag.name}')">
+                            ${tag.name}
+                            <span class="delete-hint">Right-click to delete</span>
                         </button>
                     `;
-                    todoList.appendChild(div);
+                });
+
+                tagContainer.innerHTML = html;
+                document.querySelectorAll('.tag-selector').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        activeTag = btn.dataset.tag;
+                        renderTags();
+                        render();
+                    });
                 });
             }
 
-            updateStats();
-            saveToStorage();
-        }
+            window.removeCategory = removeCategory;
 
-        function updateStats() {
-            const completedCount = todos.filter(t => t.completed).length;
-            const total = todos.length;
-            const percentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
-            statsText.innerText = total === 0 ? "Your space is clear" : `${completedCount} of ${total} tasks finished`;
-            progressBar.style.width = `${percentage}%`;
-            progressPercent.innerText = `${percentage}%`;
-        }
+            function render() {
+                const currentItems = todoList.querySelectorAll('.todo-item');
+                currentItems.forEach(item => item.remove());
 
-        function addTodo() {
-            const text = input.value.trim();
-            if (text) {
-                let taskTag = activeTag === 'All' ? (customTags.length > 0 ? customTags[0].name : 'General') : activeTag;
-                todos.push({ text, completed: false, tag: taskTag });
-                input.value = '';
-                render();
-            }
-        }
+                const filteredTodos = activeTag === 'All' ? todos : todos.filter(t => t.tag === activeTag);
 
-        window.toggleTodo = (i) => { todos[i].completed = !todos[i].completed; render(); };
-        window.deleteTodo = (i) => { todos.splice(i, 1); render(); };
+                if (filteredTodos.length === 0) {
+                    emptyState.style.display = 'block';
+                } else {
+                    emptyState.style.display = 'none';
+                    filteredTodos.forEach((todo) => {
+                        const originalIndex = todos.findIndex(t => t === todo);
+                        const div = document.createElement('div');
+                        div.className = 'todo-item p-4 sm:p-5 md:p-6 flex items-center justify-between group';
+                        div.innerHTML = `
+                            <div class="flex items-center gap-4 sm:gap-5 flex-1 cursor-pointer" onclick="window.toggleTodo(${originalIndex})">
+                                <div class="custom-checkbox ${todo.completed ? 'checked' : ''}">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div class="flex flex-col">
+                                    <span class="text-base sm:text-lg font-semibold ${todo.completed ? 'completed-text' : ''}">${todo.text}</span>
+                                    <span class="tag-pill w-fit mt-1.5 sm:mt-2 ${getTagStyle(todo.tag)}">${todo.tag || 'General'}</span>
+                                </div>
+                            </div>
+                            <button onclick="window.deleteTodo(${originalIndex})" class="opacity-0 group-hover:opacity-100 text-rose-500 transition-all p-2 sm:p-3">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
+                            </button>
+                        `;
+                        todoList.appendChild(div);
+                    });
+                }
 
-        addBtn.addEventListener('click', addTodo);
-        input.addEventListener('keypress', (e) => e.key === 'Enter' && addTodo());
-        themeBtn.addEventListener('click', toggleTheme);
-        clearCompletedBtn.addEventListener('click', () => { todos = todos.filter(t => !t.completed); render(); });
-        
-        // Export/Import Listeners
-        exportBtn.addEventListener('click', exportData);
-        importBtn.addEventListener('click', () => fileImportInput.click());
-        fileImportInput.addEventListener('change', importData);
-
-        // Category Modal Logic
-        const tagModal = document.getElementById('tag-modal');
-        const newTagInput = document.getElementById('new-tag-input');
-        const modalConfirm = document.getElementById('modal-confirm');
-        const modalCancel = document.getElementById('modal-cancel');
-
-        document.getElementById('add-tag-btn').addEventListener('click', () => {
-            tagModal.classList.remove('hidden');
-            tagModal.classList.add('flex');
-            newTagInput.focus();
-        });
-
-        modalCancel.addEventListener('click', () => {
-            tagModal.classList.add('hidden');
-            tagModal.classList.remove('flex');
-            newTagInput.value = '';
-        });
-
-        modalConfirm.addEventListener('click', () => {
-            const name = newTagInput.value.trim();
-            if (name && name.toLowerCase() !== 'all' && !customTags.find(t => t.name.toLowerCase() === name.toLowerCase())) {
-                customTags.push({ name, style: colorRotation[customTags.length % colorRotation.length] });
-                activeTag = name;
-                renderTags();
-                render();
+                updateStats();
                 saveToStorage();
             }
-            modalCancel.click();
-        });
 
-        // Initial setup
-        applyTheme();
-        renderTags();
-        render();
+            function updateStats() {
+                const completedCount = todos.filter(t => t.completed).length;
+                const total = todos.length;
+                const percentage = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+                statsText.innerText = total === 0 ? "Your space is clear" : `${completedCount} of ${total} tasks finished`;
+                progressBar.style.width = `${percentage}%`;
+                progressPercent.innerText = `${percentage}%`;
+            }
+
+            function addTodo() {
+                const text = input.value.trim();
+                if (text) {
+                    let taskTag = activeTag === 'All' ? (customTags.length > 0 ? customTags[0].name : 'General') : activeTag;
+                    todos.push({ text, completed: false, tag: taskTag });
+                    input.value = '';
+                    render();
+                }
+            }
+
+            // Populate export category dropdown
+            function populateExportCategories() {
+                let options = '<option value="__ALL__">All categories</option>';
+                customTags.forEach(tag => {
+                    options += `<option value="${tag.name}">${tag.name}</option>`;
+                });
+                exportCategorySelect.innerHTML = options;
+            }
+
+            // Toggle dropdown menu
+            function toggleDropdown(show) {
+                if (show === undefined) {
+                    dropdown.classList.toggle('show');
+                } else {
+                    dropdown.classList[show ? 'add' : 'remove']('show');
+                }
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                    toggleDropdown(false);
+                }
+            });
+
+            // Menu button click
+            menuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleDropdown();
+            });
+
+            // Import option
+            importOption.addEventListener('click', () => {
+                toggleDropdown(false);
+                fileImportInput.click();
+            });
+
+            // Export option: open modal
+            exportOption.addEventListener('click', () => {
+                toggleDropdown(false);
+                populateExportCategories();
+                exportModal.classList.remove('hidden');
+                exportModal.classList.add('flex');
+            });
+
+            // Export modal handlers
+            exportCancel.addEventListener('click', () => {
+                exportModal.classList.add('hidden');
+                exportModal.classList.remove('flex');
+            });
+
+            exportConfirm.addEventListener('click', () => {
+                const selectedCategory = exportCategorySelect.value;
+                exportData(selectedCategory === '__ALL__' ? null : selectedCategory);
+                exportModal.classList.add('hidden');
+                exportModal.classList.remove('flex');
+            });
+
+            // Close modals on overlay click
+            exportModal.addEventListener('click', (e) => {
+                if (e.target === exportModal) {
+                    exportModal.classList.add('hidden');
+                    exportModal.classList.remove('flex');
+                }
+            });
+
+            // Expose functions globally for onclick handlers
+            window.toggleTodo = (i) => { todos[i].completed = !todos[i].completed; render(); };
+            window.deleteTodo = (i) => { todos.splice(i, 1); render(); };
+
+            addBtn.addEventListener('click', addTodo);
+            input.addEventListener('keypress', (e) => e.key === 'Enter' && addTodo());
+            themeBtn.addEventListener('click', toggleTheme);
+            clearCompletedBtn.addEventListener('click', () => { todos = todos.filter(t => !t.completed); render(); });
+            
+            fileImportInput.addEventListener('change', importData);
+
+            // Category Modal Logic
+            const tagModal = document.getElementById('tag-modal');
+            const newTagInput = document.getElementById('new-tag-input');
+            const modalConfirm = document.getElementById('modal-confirm');
+            const modalCancel = document.getElementById('modal-cancel');
+
+            document.getElementById('add-tag-btn').addEventListener('click', () => {
+                tagModal.classList.remove('hidden');
+                tagModal.classList.add('flex');
+                newTagInput.focus();
+            });
+
+            modalCancel.addEventListener('click', () => {
+                tagModal.classList.add('hidden');
+                tagModal.classList.remove('flex');
+                newTagInput.value = '';
+            });
+
+            modalConfirm.addEventListener('click', () => {
+                const name = newTagInput.value.trim();
+                if (name && name.toLowerCase() !== 'all' && !customTags.find(t => t.name.toLowerCase() === name.toLowerCase())) {
+                    customTags.push({ name, style: colorRotation[customTags.length % colorRotation.length] });
+                    activeTag = name;
+                    renderTags();
+                    render();
+                    saveToStorage();
+                }
+                modalCancel.click();
+            });
+
+            // Initial setup
+            applyTheme();
+            renderTags();
+            render();
+        })();
     </script>
 </body>
 </html>
